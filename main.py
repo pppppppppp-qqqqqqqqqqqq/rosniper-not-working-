@@ -2,9 +2,9 @@ import requests
 from json import loads
 from pyperclip import copy
 
-userid = "1"
-placeid = "1"
-print("hi")
+userid = ""
+placeid = ""
+
 session = requests.session()
 
 url = f"https://thumbnails.roblox.com/v1/users/avatar-headshot?size=48x48&format=png&userIds={userid}"

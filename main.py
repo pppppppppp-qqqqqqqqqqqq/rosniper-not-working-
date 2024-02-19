@@ -1,7 +1,7 @@
 import requests, json, webbrowser
 
 userid = "1018544972"
-placeid = "606849621"
+placeid = "2788229376"
 
 session = requests.Session()
 
@@ -42,6 +42,8 @@ for v in range(0, len(tokens)):
     url = "https://thumbnails.roblox.com/v1/batch"
     response = session.post(url, json = tokens[v])
     decoded = json.loads(response.text)["data"]
+
+    print(decoded)
 
     for v in decoded:
         token = v["requestId"].replace("0:", "", ).replace(":", "").replace("AvatarHeadshot48x48pngregular", "")

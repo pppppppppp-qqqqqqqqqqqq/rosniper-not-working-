@@ -1,54 +1,54 @@
-import requests, json, pyperclip, threading, time, asyncio, aiohttp
+import requests, json, webbrowser
 
 userid = "1018544972"
-placeid = "7041939546"
+placeid = "606849621"
 
 session = requests.Session()
 
-cursor = ""
+cursor = " "
 
-async def postbatch():
-    global url, response, decoded
+def splitlist(list, x):
+    for i in range(0, len(list), x):
+        yield list[i:i + x]
 
-    async with aiohttp.ClientSession() as session:
-        url = "https://thumbnails.roblox.com/v1/batch"
-        response = await session.post(url, json = jsons)
-        decoded = json.loads(await response.text())["data"]
-        #print("hi")
+def storetokens(data):
+    list = []
+
+    for v in data:
+        jobid = v["id"]
+
+        for v in v["playerTokens"]:
+            list.append({"requestId": f"0:{v}:AvatarHeadshot:48x48:png:regular", "targetId": 0, "token": v, "type": "AvatarHeadShot", "size": "48x48", "format": "png", "jobid": jobid})
+
+    return list
 
 url = f"https://thumbnails.roblox.com/v1/users/avatar-headshot?size=48x48&format=png&userIds={userid}"
 response = session.get(url)
 decoded = json.loads(response.text)["data"]
 
-for v in decoded:
-    headshot = v["imageUrl"]
+headshot = decoded[0]["imageUrl"]
 
-hi = time.time()
-
-while True:
+while cursor:
     url = f"https://games.roblox.com/v1/games/{placeid}/servers/public?sortOrder=Asc&limit=100&cursor=" + cursor
     response = session.get(url)
     decoded = json.loads(response.text)
 
     cursor = decoded["nextPageCursor"]
+    tokens = list(splitlist(storetokens(decoded["data"]), 100))
 
-    for v in decoded["data"]:
-        jobid = v["id"]
-        #print(f"searching {jobid}")
-        jsons = []
+for v in range(0, len(tokens)):
+    i = v
 
-        for v in v["playerTokens"]:
-            jsons.append({"requestId": f"0:{v}:AvatarHeadshot:48x48:png:regular", "targetId": 0, "token": v, "type": "AvatarHeadShot", "size": "48x48", "format": "png"})
+    url = "https://thumbnails.roblox.com/v1/batch"
+    response = session.post(url, json = tokens[v])
+    decoded = json.loads(response.text)["data"]
 
-        url = "https://thumbnails.roblox.com/v1/batch"
+    for v in decoded:
+        token = v["requestId"].replace("0:", "", ).replace(":", "").replace("AvatarHeadshot48x48pngregular", "")
 
-        asyncio.run(postbatch())
-
-        for v in decoded:
-            if v["imageUrl"] == headshot:
-                print((f"Roblox.GameLauncher.joinGameInstance({placeid}, '{jobid}')"))
-                print(time.time()-hi)
-                exit()
-
-    if not cursor:
-        break
+        if v["imageUrl"] == headshot:
+            for v in tokens[i]:
+                if token == v["token"]:
+                    url = f"roblox://experiences/start?placeId={placeid}&gameInstanceId={v["jobid"]}"
+                    webbrowser.open(url, new = 0, autoraise = True)
+                    #print((f"Roblox.GameLauncher.joinGameInstance({placeid}, '{v["jobid"]}')"))

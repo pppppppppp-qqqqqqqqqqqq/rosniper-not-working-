@@ -1,26 +1,22 @@
 import requests, json, webbrowser
 
-userid = "1018544972"
-placeid = "2788229376"
+userid = ""
+placeid = ""
 
 session = requests.Session()
 
 cursor = " "
 
-def splitlist(list, x):
-    for i in range(0, len(list), x):
-        yield list[i:i + x]
-
 def storetokens(data):
-    list = []
+    tokens = []
 
     for v in data:
         jobid = v["id"]
 
         for v in v["playerTokens"]:
-            list.append({"requestId": f"0:{v}:AvatarHeadshot:48x48:png:regular", "targetId": 0, "token": v, "type": "AvatarHeadShot", "size": "48x48", "format": "png", "jobid": jobid})
+            tokens.append({"requestId": f"0:{v}:AvatarHeadshot:48x48:png:regular", "targetId": 0, "token": v, "type": "AvatarHeadShot", "size": "48x48", "format": "png", "jobid": jobid})
 
-    return list
+    return tokens
 
 url = f"https://thumbnails.roblox.com/v1/users/avatar-headshot?size=48x48&format=png&userIds={userid}"
 response = session.get(url)
@@ -34,23 +30,22 @@ while cursor:
     decoded = json.loads(response.text)
 
     cursor = decoded["nextPageCursor"]
-    tokens = list(splitlist(storetokens(decoded["data"]), 100))
+    tokens = storetokens(decoded["data"])
 
-for v in range(0, len(tokens)):
+chunks = [tokens[i:i + 100] for i in range(0, len(tokens), 100)]
+
+for v in range(0, len(chunks)):
     i = v
 
     url = "https://thumbnails.roblox.com/v1/batch"
-    response = session.post(url, json = tokens[v])
+    response = session.post(url, json = chunks[v])
     decoded = json.loads(response.text)["data"]
 
-    print(decoded)
-
     for v in decoded:
-        token = v["requestId"].replace("0:", "", ).replace(":", "").replace("AvatarHeadshot48x48pngregular", "")
+        requestid = v["requestId"]
 
-        if v["imageUrl"] == headshot:
-            for v in tokens[i]:
-                if token == v["token"]:
+        if headshot == v["imageUrl"]:
+            for v in chunks[i]:
+                if requestid == v["requestId"]:
                     url = f"roblox://experiences/start?placeId={placeid}&gameInstanceId={v["jobid"]}"
                     webbrowser.open(url, new = 0, autoraise = True)
-                    #print((f"Roblox.GameLauncher.joinGameInstance({placeid}, '{v["jobid"]}')"))
